@@ -1,0 +1,142 @@
+diff -Naur openssl-1.0.0d/crypto/crypto.h openssl-1.0.0d-revised/crypto/crypto.h
+--- openssl-1.0.0d/crypto/crypto.h	2010-01-26 21:58:48.000000000 +0800
++++ openssl-1.0.0d-revised/crypto/crypto.h	2012-10-17 20:45:59.395558657 +0800
+@@ -222,6 +222,7 @@
+ #define CRYPTO_LOCK_FIPS		39
+ #define CRYPTO_LOCK_FIPS2		40
+ #define CRYPTO_NUM_LOCKS		41
++#define CRYPTO_LOCK_ElGamal		42
+ 
+ #define CRYPTO_LOCK		1
+ #define CRYPTO_UNLOCK		2
+@@ -323,6 +324,7 @@
+ #define CRYPTO_EX_INDEX_ECDH		13
+ #define CRYPTO_EX_INDEX_COMP		14
+ #define CRYPTO_EX_INDEX_STORE		15
++#define CRYPTO_EX_INDEX_ElGamal		16
+ 
+ /* Dynamically assigned indexes start from this value (don't use directly, use
+  * via CRYPTO_ex_data_new_class). */
+diff -Naur openssl-1.0.0d/crypto/err/err.h openssl-1.0.0d-revised/crypto/err/err.h
+--- openssl-1.0.0d/crypto/err/err.h	2008-10-27 02:40:51.000000000 +0800
++++ openssl-1.0.0d-revised/crypto/err/err.h	2012-10-17 20:21:23.240041810 +0800
+@@ -169,6 +169,7 @@
+ #define ERR_LIB_PEM		9
+ #define ERR_LIB_DSA		10
+ #define ERR_LIB_X509		11
++#define ERR_LIB_ElGamal		12
+ /* #define ERR_LIB_METH         12 */
+ #define ERR_LIB_ASN1		13
+ #define ERR_LIB_CONF		14
+@@ -210,6 +211,7 @@
+ #define OBJerr(f,r)  ERR_PUT_error(ERR_LIB_OBJ,(f),(r),__FILE__,__LINE__)
+ #define PEMerr(f,r)  ERR_PUT_error(ERR_LIB_PEM,(f),(r),__FILE__,__LINE__)
+ #define DSAerr(f,r)  ERR_PUT_error(ERR_LIB_DSA,(f),(r),__FILE__,__LINE__)
++#define ElGamalerr(f,r)  ERR_PUT_error(ERR_LIB_ElGamal,(f),(r),__FILE__,__LINE__)
+ #define X509err(f,r) ERR_PUT_error(ERR_LIB_X509,(f),(r),__FILE__,__LINE__)
+ #define ASN1err(f,r) ERR_PUT_error(ERR_LIB_ASN1,(f),(r),__FILE__,__LINE__)
+ #define CONFerr(f,r) ERR_PUT_error(ERR_LIB_CONF,(f),(r),__FILE__,__LINE__)
+@@ -271,6 +273,7 @@
+ #define ERR_R_PEM_LIB	ERR_LIB_PEM       /* 9 */
+ #define ERR_R_DSA_LIB	ERR_LIB_DSA      /* 10 */
+ #define ERR_R_X509_LIB	ERR_LIB_X509     /* 11 */
++#define ERR_R_ElGamal_LIB	ERR_LIB_ElGamal      /* 12 */
+ #define ERR_R_ASN1_LIB	ERR_LIB_ASN1     /* 13 */
+ #define ERR_R_CONF_LIB	ERR_LIB_CONF     /* 14 */
+ #define ERR_R_CRYPTO_LIB ERR_LIB_CRYPTO  /* 15 */
+diff -Naur openssl-1.0.0d/Makefile openssl-1.0.0d-revised/Makefile
+--- openssl-1.0.0d/Makefile	2011-02-09 01:13:20.000000000 +0800
++++ openssl-1.0.0d-revised/Makefile	2012-10-19 23:26:19.240444776 +0800
+@@ -120,7 +120,7 @@
+ 	objects \
+ 	md4 md5 sha mdc2 hmac ripemd whrlpool \
+ 	des aes rc2 rc4 idea bf cast camellia seed modes \
+-	bn ec rsa dsa ecdsa dh ecdh dso engine \
++	bn ec rsa dsa elgamal ecdsa dh ecdh dso engine \
+ 	buffer bio stack lhash rand err \
+ 	evp asn1 pem x509 x509v3 conf txt_db pkcs7 pkcs12 comp ocsp ui krb5 \
+ 	cms pqueue ts
+diff -Naur openssl-1.0.0d/test/Makefile openssl-1.0.0d-revised/test/Makefile
+--- openssl-1.0.0d/test/Makefile	2010-12-03 02:26:12.000000000 +0800
++++ openssl-1.0.0d-revised/test/Makefile	2012-10-19 16:16:07.708427411 +0800
+@@ -54,6 +54,7 @@
+ RANDTEST=	randtest
+ DHTEST=		dhtest
+ DSATEST=	dsatest
++ELGAMALTEST=	elgamaltest
+ METHTEST=	methtest
+ SSLTEST=	ssltest
+ RSATEST=	rsa_test
+@@ -71,7 +72,7 @@
+ 	$(DESTEST)$(EXE_EXT) $(SHATEST)$(EXE_EXT) $(SHA1TEST)$(EXE_EXT) $(SHA256TEST)$(EXE_EXT) $(SHA512TEST)$(EXE_EXT) \
+ 	$(MDC2TEST)$(EXE_EXT) $(RMDTEST)$(EXE_EXT) \
+ 	$(RANDTEST)$(EXE_EXT) $(DHTEST)$(EXE_EXT) $(ENGINETEST)$(EXE_EXT) \
+-	$(BFTEST)$(EXE_EXT) $(CASTTEST)$(EXE_EXT) $(SSLTEST)$(EXE_EXT) $(EXPTEST)$(EXE_EXT) $(DSATEST)$(EXE_EXT) $(RSATEST)$(EXE_EXT) \
++	$(BFTEST)$(EXE_EXT) $(CASTTEST)$(EXE_EXT) $(SSLTEST)$(EXE_EXT) $(EXPTEST)$(EXE_EXT) $(DSATEST)$(EXE_EXT) $(ELGAMALTEST)$(EXE_EXT) $(RSATEST)$(EXE_EXT) \
+ 	$(EVPTEST)$(EXE_EXT) $(IGETEST)$(EXE_EXT) $(JPAKETEST)$(EXE_EXT) \
+ 	$(ASN1TEST)$(EXE_EXT)
+ 
+@@ -84,7 +85,7 @@
+ 	$(DESTEST).o $(SHATEST).o $(SHA1TEST).o $(SHA256TEST).o $(SHA512TEST).o \
+ 	$(MDC2TEST).o $(RMDTEST).o \
+ 	$(RANDTEST).o $(DHTEST).o $(ENGINETEST).o $(CASTTEST).o \
+-	$(BFTEST).o  $(SSLTEST).o  $(DSATEST).o  $(EXPTEST).o $(RSATEST).o \
++	$(BFTEST).o  $(SSLTEST).o  $(DSATEST).o $(ELGAMALTEST).o $(EXPTEST).o $(RSATEST).o \
+ 	$(EVPTEST).o $(IGETEST).o $(JPAKETEST).o $(ASN1TEST).o
+ SRC=	$(BNTEST).c $(ECTEST).c  $(ECDSATEST).c $(ECDHTEST).c $(IDEATEST).c \
+ 	$(MD2TEST).c  $(MD4TEST).c $(MD5TEST).c \
+@@ -92,7 +93,7 @@
+ 	$(RC2TEST).c $(RC4TEST).c $(RC5TEST).c \
+ 	$(DESTEST).c $(SHATEST).c $(SHA1TEST).c $(MDC2TEST).c $(RMDTEST).c \
+ 	$(RANDTEST).c $(DHTEST).c $(ENGINETEST).c $(CASTTEST).c \
+-	$(BFTEST).c  $(SSLTEST).c $(DSATEST).c   $(EXPTEST).c $(RSATEST).c \
++	$(BFTEST).c  $(SSLTEST).c $(DSATEST).c $(ELGAMALTEST).c $(EXPTEST).c $(RSATEST).c \
+ 	$(EVPTEST).c $(IGETEST).c $(JPAKETEST).c $(ASN1TEST).c
+ 
+ EXHEADER= 
+@@ -134,7 +135,7 @@
+ 	test_rmd test_rc2 test_rc4 test_rc5 test_bf test_cast test_aes \
+ 	test_rand test_bn test_ec test_ecdsa test_ecdh \
+ 	test_enc test_x509 test_rsa test_crl test_sid \
+-	test_gen test_req test_pkcs7 test_verify test_dh test_dsa \
++	test_gen test_req test_pkcs7 test_verify test_dh test_dsa test_elgamal\
+ 	test_ss test_ca test_engine test_evp test_ssl test_tsa test_ige \
+ 	test_jpake test_cms
+ 
+@@ -256,6 +257,11 @@
+ 	../util/shlib_wrap.sh ./$(DSATEST)
+ 	../util/shlib_wrap.sh ./$(DSATEST) -app2_1
+ 
++test_elgamal:
++	@echo "Generate a set of ELGAMAL parameters"
++	../util/shlib_wrap.sh ./$(ELGAMALTEST)
++	../util/shlib_wrap.sh ./$(ELGAMALTEST) -app2_1
++
+ test_gen:
+ 	@echo "Generate and verify a certificate request"
+ 	@sh ./testgen
+@@ -419,6 +425,9 @@
+ $(DSATEST)$(EXE_EXT): $(DSATEST).o $(DLIBCRYPTO)
+ 	@target=$(DSATEST); $(BUILD_CMD)
+ 
++$(ELGAMALTEST)$(EXE_EXT): $(ELGAMALTEST).o $(DLIBCRYPTO)
++	@target=$(ELGAMALTEST); $(BUILD_CMD)
++
+ $(METHTEST)$(EXE_EXT): $(METHTEST).o $(DLIBCRYPTO)
+ 	@target=$(METHTEST); $(BUILD_CMD)
+ 
+@@ -511,6 +520,14 @@
+ dsatest.o: ../include/openssl/ossl_typ.h ../include/openssl/rand.h
+ dsatest.o: ../include/openssl/safestack.h ../include/openssl/stack.h
+ dsatest.o: ../include/openssl/symhacks.h dsatest.c
++elgamaltest.o: ../e_os.h ../include/openssl/bio.h ../include/openssl/bn.h
++elgamaltest.o: ../include/openssl/crypto.h ../include/openssl/dh.h
++elgamaltest.o: ../include/openssl/elgamal.h ../include/openssl/e_os2.h
++elgamaltest.o: ../include/openssl/err.h ../include/openssl/lhash.h
++elgamaltest.o: ../include/openssl/opensslconf.h ../include/openssl/opensslv.h
++elgamaltest.o: ../include/openssl/ossl_typ.h ../include/openssl/rand.h
++elgamaltest.o: ../include/openssl/safestack.h ../include/openssl/stack.h
++elgamaltest.o: ../include/openssl/symhacks.h elgamaltest.c
+ ecdhtest.o: ../e_os.h ../include/openssl/asn1.h ../include/openssl/bio.h
+ ecdhtest.o: ../include/openssl/bn.h ../include/openssl/crypto.h
+ ecdhtest.o: ../include/openssl/e_os2.h ../include/openssl/ec.h
